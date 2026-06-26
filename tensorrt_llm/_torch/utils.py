@@ -12,7 +12,14 @@ from torch.nn import functional as F
 from tensorrt_llm._utils import (TensorWrapper, convert_to_torch_tensor,
                                  get_sm_version, torch_dtype_to_str)
 from tensorrt_llm.mapping import Mapping
-from tensorrt_llm.math_utils import ceil_div, pad_up
+from tensorrt_llm.math_utils import (ceil_div, pad_up,
+                                     next_positive_power_of_2,
+                                     last_positive_power_of_2,
+                                     nearest_in_buckets,
+                                     get_power_of_2_num_tokens_buckets,
+                                     get_last_power_of_2_num_tokens_buckets,
+                                     deep_gemm_gen_tuning_buckets,
+                                     compute_swizzled_sf_shape)
 from tensorrt_llm.quantization.utils import fp4_utils
 
 is_torch_compiling_flag = False
@@ -62,12 +69,13 @@ class ActType_TrtllmGen(IntEnum):
     Silu = 2
 
 
-# IMPORTANT: when adding a new activation type, please update this function.
-# And make sure it aligned with cpp/tensorrt_llm/kernels/cutlass_kernels/include/moe_gemm_kernels.h::isGatedActivation function.
+# IMPORTANT: when adding a new activation type, please update this function
+# and the C++ implementations in:
+#   - cpp/tensorrt_llm/kernels/cutlass_kernels/include/moe_gemm_kernels.h
+#   - cpp/tensorrt_llm/nanobind/utils/bindings.cpp
 def is_gated_activation(activation_type: ActivationType) -> bool:
-    return activation_type in [
-        ActivationType.Swiglu, ActivationType.SwigluBias, ActivationType.Geglu
-    ]
+    from tensorrt_llm.bindings.internal import utils as _cpp_utils
+    return _cpp_utils.is_gated_activation(int(activation_type))
 
 
 def set_torch_compiling(enable: bool):
@@ -165,12 +173,6 @@ class Fp4QuantizedTensor:
         return self.fp4_tensor.shape
 
 
-def compute_swizzled_sf_shape(row: int, col: int):
-    padded_row = pad_up(row, 128)
-    padded_col = pad_up(col, 4)
-    return padded_row, padded_col
-
-
 def swizzle_sf(sf: torch.Tensor,
                rows: int,
                cols: int,
@@ -255,66 +257,6 @@ def _(sf, rows, cols, scaling_vector_size=16):
     total_rows = num_partitions * rows
     sz = pad_up(total_rows, 128) * pad_up(cols, 4)
     return sf.new_empty(sz)
-
-
-def next_positive_power_of_2(x: int) -> int:
-    if x < 1:
-        return 1
-
-    # Following code is equivalent to 1 << (x - 1).bit_length()
-    # But this impl does not contain bit_length() so can be used by torch compile.
-    # It can correctly handle 64bit number which should be enough for now.
-    n = x - 1
-    n |= n >> 1
-    n |= n >> 2
-    n |= n >> 4
-    n |= n >> 8
-    n |= n >> 16
-    n |= n >> 32
-    return n + 1
-
-
-def last_positive_power_of_2(x: int) -> int:
-    next = next_positive_power_of_2(x)
-    if next == x:
-        return next
-
-    return next // 2
-
-
-def nearest_in_buckets(x: int, buckets: List[int]) -> int:
-    return min(max(next_positive_power_of_2(x), buckets[0]), buckets[-1])
-
-
-def get_power_of_2_num_tokens_buckets(max_num_tokens) -> List[int]:
-    max_num_tokens = next_positive_power_of_2(max_num_tokens)
-    num_token_buckets = []
-    m = max_num_tokens
-    while m >= 1:
-        num_token_buckets.append(m)
-        m //= 2
-
-    return tuple(num_token_buckets[::-1])
-
-
-def get_last_power_of_2_num_tokens_buckets(max_num_tokens) -> List[int]:
-    max_num_tokens = last_positive_power_of_2(max_num_tokens)
-    num_token_buckets = []
-    m = max_num_tokens
-    while m >= 1:
-        num_token_buckets.append(m)
-        m //= 2
-    return tuple(num_token_buckets[::-1])
-
-
-def deep_gemm_gen_tuning_buckets(x: int):
-    buckets = tuple(range(8, 128, 8))
-    # Clamp x to be between 4096 and 8192.
-    if x >= 128:
-        x = min(x, 8192)
-        x = max(x, 4096)
-        buckets += tuple(range(128, x, 128))
-    return buckets
 
 
 def fp4_scale_infer_shape(input_shapes: List[List[int]]):

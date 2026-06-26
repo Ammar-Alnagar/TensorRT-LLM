@@ -2,12 +2,12 @@
 
 # Quick Start Guide
 
-This is the starting point to try out TensorRT LLM. Specifically, this Quick Start Guide enables you to quickly get set up and send HTTP requests using TensorRT LLM.
+This is the starting point to try out Trinity LLM. Specifically, this Quick Start Guide enables you to quickly get set up and send HTTP requests using Trinity LLM.
 
 
-## Install TensorRT LLM
+## Install Trinity LLM
 
-Follow the [Installation Guide](installation/installation-guide) to set up TensorRT LLM. The quickest option is to pull and run the pre-built release container from NGC.
+Follow the [Installation Guide](installation/installation-guide) to set up Trinity LLM. The quickest option is to pull and run the pre-built release container from NGC.
 
 (deploy-with-trtllm-serve)=
 ## Deploy Online Serving with trtllm-serve

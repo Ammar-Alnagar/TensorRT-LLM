@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,4 +12,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-__version__ = "1.3.0rc20"
+"""
+Version string for Trinity LLM.
+
+Defined in C++ when native bindings are available, with Python fallback.
+"""
+import functools
+
+
+@functools.lru_cache(None)
+def _get_cpp_version():
+    try:
+        from tensorrt_llm.bindings.internal import utils as _cpp_utils
+        return str(_cpp_utils.__version__)
+    except (ImportError, AttributeError):
+        return None
+
+
+_cpp_ver = _get_cpp_version()
+if _cpp_ver is not None:
+    __version__ = _cpp_ver
+else:
+    __version__ = "1.3.0rc20"

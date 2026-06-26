@@ -1,15 +1,15 @@
 import contextlib
-import math
 from dataclasses import dataclass
 from typing import Optional
 
 import torch
 
+from tensorrt_llm.bindings.internal import utils as _cpp_utils
 from tensorrt_llm.logger import logger
 
 
 def get_size_in_byte(target_shape: list[int], target_dtype: torch.dtype):
-    return math.prod(target_shape) * target_dtype.itemsize
+    return _cpp_utils.get_size_in_byte(target_shape, target_dtype.itemsize)
 
 
 @dataclass

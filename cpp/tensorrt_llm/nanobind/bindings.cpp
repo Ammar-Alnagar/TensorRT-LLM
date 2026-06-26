@@ -49,6 +49,7 @@
 #include "tensorrt_llm/nanobind/testing/modelSpecBinding.h"
 #include "tensorrt_llm/nanobind/thop/bindings.h"
 #include "tensorrt_llm/nanobind/userbuffers/bindings.h"
+#include "tensorrt_llm/nanobind/utils/bindings.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/cudaStream.h"
 #include "tensorrt_llm/runtime/gptJsonConfig.h"
@@ -82,7 +83,7 @@ tr::SamplingConfig makeSamplingConfig(std::vector<tr::SamplingConfig> const& con
 
 NB_MODULE(TRTLLM_NB_MODULE, m)
 {
-    m.doc() = "TensorRT LLM Python bindings for C++ runtime";
+    m.doc() = "Trinity LLM Python bindings for C++ runtime";
     nb::set_leak_warnings(false);
 
     // Create MpiComm binding first since it's used in the executor bindings
@@ -530,6 +531,9 @@ NB_MODULE(TRTLLM_NB_MODULE, m)
 
     auto mSuffixAutomaton = mInternal.def_submodule("suffix_automaton", "Suffix automaton internal bindings");
     tensorrt_llm::nanobind::suffix_automaton::initBindings(mSuffixAutomaton);
+
+    auto mUtils = m.def_submodule("utils", "C++ utility functions");
+    tensorrt_llm::nanobind::utils::initBindings(mUtils);
 
     // NVLS allocators
     nb::class_<tr::IpcNvlsHandle>(m, "IpcNvlsHandle")

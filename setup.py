@@ -411,8 +411,8 @@ setup(
     name='tensorrt_llm',
     version=get_version(),
     description=
-    ('TensorRT LLM provides users with an easy-to-use Python API to define Large Language Models (LLMs) and supports '
-     'state-of-the-art optimizations to perform inference efficiently on NVIDIA GPUs.'
+    ('Trinity LLM provides users with an easy-to-use Python API to define Large Language Models (LLMs) and a C++-first '
+     'runtime with state-of-the-art optimizations to perform inference efficiently on NVIDIA GPUs.'
      ),
     long_description=long_description,
     long_description_content_type="text/markdown",

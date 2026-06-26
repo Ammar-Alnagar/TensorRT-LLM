@@ -26,6 +26,7 @@ set(SRCS
     testing/modelSpecBinding.cpp
     userbuffers/bindings.cpp
     thop/bindings.cpp
+    utils/bindings.cpp
     ../runtime/ipcNvlsMemory.cu
     bindings.cpp)
 
